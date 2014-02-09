@@ -1,3 +1,5 @@
+#include <EEPROM.h>
+#include "EEPROMAnything.h"
 #include "ST7565.h"
 #include <PS2Keyboard.h>
 
@@ -11,15 +13,20 @@
 ST7565 glcd(9, 8, 7, 6, 5);
 const int keyboardDataPin = 3;
 const int keyboardIRQPin = 2;
+
 enum States {START, SHOWOLDMESSAGE, RECIEVENEW, END};
 States currentState = START;
+
 bool shown = false;
+
 PS2Keyboard keyboard;
+
 char inputHolder[200];
-int usedAscii[] = {32, 32, 13};
+char* oldMessage;
 void setup()   {                
   Serial.begin(9600);
   Serial.print(freeRam());
+  EEPROM_readAnything(0, oldMessage);
   // turn on backlight
   pinMode(BACKLIGHT_LED, OUTPUT);
   digitalWrite(BACKLIGHT_LED, HIGH);
@@ -99,6 +106,7 @@ bool gatherKeyboardText(){
                     return true;
                     break;
                 }else if(c == 13){
+                    EEPROM_writeAnything(0, inputHolder);
                     currentState = END;
                     shown = false;
                     break;
@@ -123,15 +131,10 @@ bool isEnter(){
         return false;
     }
 }
-bool isinArray(int array[],int number){
-    int len = sizeof(array)/sizeof(array[0]);
-    for(int i=0; i<len; i++){
-        return array[i] == number;
-    }
-}
+
 void showOldMessage(){
     glcd.clear();
-    glcd.drawstring(0, 0, "Old message");
+    glcd.drawstring(0, 0, oldMessage);
     glcd.display();
     shown = true;
 }
