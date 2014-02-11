@@ -14,6 +14,7 @@ ST7565 glcd(9, 8, 7, 6, 5);
 const int keyboardDataPin = 3;
 const int keyboardIRQPin = 2;
 
+char inputHolder[200];
 enum States {START, SHOWOLDMESSAGE, RECIEVENEW, END};
 States currentState = START;
 
@@ -21,12 +22,12 @@ bool shown = false;
 
 PS2Keyboard keyboard;
 
-char inputHolder[200];
-char* oldMessage;
+char oldMessage[200];
 void setup()   {                
   Serial.begin(9600);
   Serial.print(freeRam());
   EEPROM_readAnything(0, oldMessage);
+  Serial.println(oldMessage);
   // turn on backlight
   pinMode(BACKLIGHT_LED, OUTPUT);
   digitalWrite(BACKLIGHT_LED, HIGH);
@@ -65,11 +66,7 @@ void loop()
             }
             break;
         case RECIEVENEW:
-            if(gatherKeyboardText()){
-                glcd.clear();
-                glcd.drawstring(0,0, inputHolder);
-                glcd.display();
-            }
+            gatherKeyboardText();
             break;
         case END:
             if(!shown){
@@ -92,11 +89,14 @@ bool gatherKeyboardText(){
     static int inputCounter = 0;
     if(keyboard.available()){
         char c = keyboard.read();
-        switch (c >= 97 && c <= 122 || c == 32){
+        switch (c >= 97 && c <= 122 && inputCounter < 168 || c == 32 ){
             case true:
                 
                 inputHolder[inputCounter] = c;
                 inputCounter++;
+                glcd.clear();
+                glcd.drawstring(0, 0, inputHolder);
+                glcd.display();
                 return true;
                 break;
             case false:
@@ -106,8 +106,14 @@ bool gatherKeyboardText(){
                     return true;
                     break;
                 }else if(c == 13){
+                    inputCounter = 0;
                     EEPROM_writeAnything(0, inputHolder);
+                    strcpy(oldMessage, inputHolder);
+
+                    memset(inputHolder, ' ', sizeof(inputHolder));
+                    Serial.println(inputHolder);
                     currentState = END;
+
                     shown = false;
                     break;
                 }
