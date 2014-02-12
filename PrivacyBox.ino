@@ -53,14 +53,18 @@ void loop()
             break;
         case SHOWOLDMESSAGE:
             if(!shown){ 
-                Serial.println("showing oldmessage");
+                glcd.clear();
+                glcd.drawstring(0, 2, "Last message: ");
+                glcd.display();
+                delay(500);
                 showOldMessage();
-                delay(1000);
+                delay(3000);
             }else{
                 Serial.println("displaying rec");
                 glcd.clear();
                 glcd.drawstring(0, 2, "Type your message,");
-                glcd.drawstring(0, 5, "Press Enter to send");
+                glcd.drawstring(0, 3, "No Caps, No Numbers");
+                glcd.drawstring(0, 6, "Press Enter to send");
                 glcd.display();
                 currentState = RECIEVENEW;
             }
@@ -103,6 +107,10 @@ bool gatherKeyboardText(){
                 if(c == PS2_DELETE && inputCounter > 0){
                     inputCounter--;
                     inputHolder[inputCounter] = 32;
+                    glcd.clear();
+                    glcd.drawstring(0, 0, inputHolder);
+                    glcd.display();
+ 
                     return true;
                     break;
                 }else if(c == 13){
