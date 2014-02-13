@@ -46,6 +46,7 @@ void loop()
                 showStartText();
             }else{
                 if(isEnter() ==1){
+
                     shown = false;
                     currentState = SHOWOLDMESSAGE;
                 }
@@ -54,28 +55,31 @@ void loop()
         case SHOWOLDMESSAGE:
             if(!shown){ 
                 glcd.clear();
-                glcd.drawstring(0, 2, "Last message: ");
+                glcd.drawstring(0, 0, "The last message: ");
                 glcd.display();
-                delay(500);
+                delay(2000);
                 showOldMessage();
                 delay(3000);
             }else{
                 Serial.println("displaying rec");
                 glcd.clear();
-                glcd.drawstring(0, 2, "Type your message,");
-                glcd.drawstring(0, 3, "No Caps, No Numbers");
+                glcd.drawstring(0, 1, "Type your message,");
+                glcd.drawstring(0, 2, "No Caps, No Numbers");
+                glcd.drawstring(40,4 , "Then");
                 glcd.drawstring(0, 6, "Press Enter to send");
                 glcd.display();
                 currentState = RECIEVENEW;
+                break;
             }
             break;
         case RECIEVENEW:
+            waitTime(20000);
             gatherKeyboardText();
             break;
         case END:
             if(!shown){
                 glcd.clear();
-                glcd.drawstring(0, 1, "thank you");
+                glcd.drawstring(0, 1, "Thank You");
                 glcd.display();
                 shown = true;
             }else{
@@ -85,9 +89,18 @@ void loop()
                 delay(1000);
                 shown = false;
                 currentState = START;
+                break;
             }
             
     }   
+}
+void waitTime(int interval){
+    static long starttime = millis();
+    long curtime = millis();
+    if((starttime + interval) < curtime){
+        currentState = START;
+    }
+
 }
 bool gatherKeyboardText(){
     static int inputCounter = 0;
@@ -120,9 +133,8 @@ bool gatherKeyboardText(){
 
                     memset(inputHolder, ' ', sizeof(inputHolder));
                     Serial.println(inputHolder);
-                    currentState = END;
-
                     shown = false;
+                    currentState = END;
                     break;
                 }
                 return false;
