@@ -103,6 +103,8 @@ void waitTime(int interval){
 
 }
 bool gatherKeyboardText(){
+    static long starttime = millis();
+    long curtime = millis();
     static int inputCounter = 0;
     if(keyboard.available()){
         char c = keyboard.read();
@@ -129,8 +131,8 @@ bool gatherKeyboardText(){
                 }else if(c == 13){
                     inputCounter = 0;
                     EEPROM_writeAnything(0, inputHolder);
+                    sendMessageAndData(inputHolder, curtime-starttime);
                     strcpy(oldMessage, inputHolder);
-
                     memset(inputHolder, ' ', sizeof(inputHolder));
                     Serial.println(inputHolder);
                     shown = false;
@@ -144,6 +146,12 @@ bool gatherKeyboardText(){
         return false;
     }
 
+}
+void sendMessageAndData(char message[200], long timetyping){
+    Serial.print("message: ");
+    Serial.print(message);
+    Serial.print(" timetyping: ");
+    Serial.println(timetyping);
 }
 bool isEnter(){
     if(keyboard.available()){
