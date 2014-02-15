@@ -2,6 +2,11 @@ extends layout
 
 block content
     nav(class = "navbar navbar-default navbar-fixed-top navbar-inverse", role="navigation")
-        h1
-            | Privacy Box
+        div.container-fluid
+            div.navbar-brand
+                |Privacy Box
+            div.collapse.navbar-collapse
+                form(class ="navbar-form navbar-right", role="search")
+                    div.form-group
+                        input(type="text", class="form-control", placeholder="search", ng-model="search")
     div(ng-view)

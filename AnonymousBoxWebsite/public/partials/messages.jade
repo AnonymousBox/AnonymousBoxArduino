@@ -1,8 +1,11 @@
 <div class="container">
-    <h1> Heres a container </h1>
-    <div ng-repeat='message in messages'>
-       <h2> {{message.message}} </h2>
-       <h2> {{message.created}} </h2>
-       <image src="/images/{{message.pictureurl}}">      
+    <div ng-repeat='message in messages | filter:search'>
+        <div class="onemessage">
+            <h2>Message Sent: {{message.message}} </h2>
+            <h2>Time at sending: {{message.created}} </h2>
+            <h2>Picture of sender: </h2>
+            <br>
+            <image src="/images/{{message.pictureurl}}">      
+        </div>
     </div>
 </div>

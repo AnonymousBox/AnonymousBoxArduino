@@ -34,7 +34,7 @@ exports.post = function(req, res){
 
 };
 exports.getmessages = function(req, res){
-    newMessageSchema.find({}, {}, function(err, docs){
+    newMessageSchema.find().sort({_id:-1}).exec(function(err, docs){
         if(!err){
             res.json(docs);
         }else{
