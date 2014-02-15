@@ -10,12 +10,12 @@ exports.list = function(req, res){
 };
 exports.post = function(req, res){
     var tempPath = req.files.file.path;
-    var targetPath = path.resolve('./public/images/image.jpg');
+    var tempPathName = tempPath.split('/')[tempPath.split('/').length-1];
+    var targetPath = path.resolve('./public/images/'+tempPathName);
     messageObject = {
         message: req.body.message,
-        time: req.body.time,
         staytime: req.body.staytime,
-        uploadurl: './public/images/image.jpg'
+        pictureurl: tempPathName
     };
     fs.rename(tempPath, targetPath, function(err) {
         if (err) throw err;
