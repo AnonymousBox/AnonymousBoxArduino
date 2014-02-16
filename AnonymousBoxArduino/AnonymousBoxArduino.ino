@@ -25,9 +25,7 @@ PS2Keyboard keyboard;
 char oldMessage[200];
 void setup()   {                
   Serial.begin(9600);
-  Serial.print(freeRam());
   EEPROM_readAnything(0, oldMessage);
-  Serial.println(oldMessage);
   // turn on backlight
   pinMode(BACKLIGHT_LED, OUTPUT);
   digitalWrite(BACKLIGHT_LED, HIGH);
@@ -61,7 +59,6 @@ void loop()
                 showOldMessage();
                 delay(3000);
             }else{
-                Serial.println("displaying rec");
                 glcd.clear();
                 glcd.drawstring(0, 1, "Type your message,");
                 glcd.drawstring(0, 2, "No Caps, No Numbers");
@@ -134,7 +131,6 @@ bool gatherKeyboardText(){
                     sendMessageAndData(inputHolder, curtime-starttime);
                     strcpy(oldMessage, inputHolder);
                     memset(inputHolder, ' ', sizeof(inputHolder));
-                    Serial.println(inputHolder);
                     shown = false;
                     currentState = END;
                     break;
