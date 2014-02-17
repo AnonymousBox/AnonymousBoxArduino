@@ -1,10 +1,24 @@
 var mongoose = require('mongoose');
 var db = mongoose.createConnection('localhost', 'AnonymousBox');
-var MessageSchema = require('../models/messageObjectSchema.js').messageSchema;
-var newMessageSchema = db.model('messageSchema', MessageSchema);
+var MessageSchema = require('../models/messageObjectSchema.js').MessageSchema;
+var MessageModel = db.model('MessageSchema', MessageSchema);
 var path = require('path');
 var fs = require('fs');
 
+var average = 0;
+var getAverage = function(){
+    var staytimes = 0;
+    var staylen = 0
+    MessageModel.find({}).select('staytime').exec(function(err, docs){
+        docs.forEach(function(e){
+            if(e.staytime){
+                staytimes += e.staytime;
+                staylen++;
+            }
+        });
+        return staytimes/staylen
+    });
+}
 exports.list = function(req, res){
     res.render('index.jade');
 };
@@ -21,7 +35,7 @@ exports.post = function(req, res){
         if (err) throw err;
         console.log("Upload completed!");
     });
-    var postMessage = new newMessageSchema(messageObject);
+    var postMessage = new MessageModel(messageObject);
     postMessage.save(function(err, doc){
         if(err || !doc){
             throw 'Error';
@@ -34,7 +48,7 @@ exports.post = function(req, res){
 
 };
 exports.getmessages = function(req, res){
-    newMessageSchema.find().sort({_id:-1}).exec(function(err, docs){
+    MessageModel.find().sort({_id:-1}).exec(function(err, docs){
         if(!err){
             res.json(docs);
         }else{

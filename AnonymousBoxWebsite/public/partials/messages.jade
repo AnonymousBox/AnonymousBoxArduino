@@ -1,11 +1,21 @@
+<br>
+<br>
 <div class="container">
     <div ng-repeat='message in messages | filter:search'>
         <div class="onemessage">
-            <h2>Message Sent: {{message.message}} </h2>
-            <h2>Time at sending: {{message.created}} </h2>
-            <h2>Picture of sender: </h2>
-            <br>
-            <image src="/images/{{message.pictureurl}}">      
+            <div class="well">
+                <legend>{{message.getDate}} </legend> 
+                <div class="row">
+                    <div class="col-xs-6">
+                        <image src="/images/{{message.pictureurl}}">      
+                    </div>
+                    <div class="col-xs-6">
+                        <h2>Message Sent: {{message.message}} </h2>
+                        <h2>Stayed for {{message.staytime}} minutes</h2>
+                       
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
