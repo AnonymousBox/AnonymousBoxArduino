@@ -1,4 +1,4 @@
-import serial, pygame, pygame.camera, time, json
+import serial, pygame, pygame.camera, time, json, ast
 import uploadToServer
 PORT = '/dev/ttyUSB0'
 ser = serial.Serial(PORT, baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=1)
@@ -24,11 +24,11 @@ if __name__ == '__main__':
         if(len(data) >= 1):
             data[0] = data[0].replace('\x02','')
             print data
-
-            params = json.loads(data[0]);
+            params = ast.literal_eval(data[0]);
             print params
             camera.takePicture()
             filename = camera.savePicture()
+            uploadToServer.uploadeverything(params, filename)
 
 
 

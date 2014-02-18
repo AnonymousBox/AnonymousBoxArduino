@@ -5,6 +5,7 @@
 
 #define BACKLIGHT_LED 10
 
+#define DEBUG 1
 // pin 9 - Serial data out (SID)
 // pin 8 - Serial clock out (SCLK)
 // pin 7 - Data/Command select (RS or A0)
@@ -40,68 +41,58 @@ void loop()
 {
     switch (currentState){
         case START:
-            if(!shown){
-                showStartText();
+           if(isEnter() ==1){
+                currentState = SHOWOLDMESSAGE;
             }else{
-                if(isEnter() ==1){
-
-                    shown = false;
-                    currentState = SHOWOLDMESSAGE;
-                }
+                showStartText();
             }
             break;
         case SHOWOLDMESSAGE:
-            if(!shown){ 
-                glcd.clear();
-                glcd.drawstring(0, 0, "The last message: ");
-                glcd.display();
-                delay(2000);
-                showOldMessage();
-                delay(3000);
-            }else{
-                glcd.clear();
-                glcd.drawstring(0, 1, "Type your message,");
-                glcd.drawstring(0, 2, "No Caps, No Numbers");
-                glcd.drawstring(40,4 , "Then");
-                glcd.drawstring(0, 6, "Press Enter to send");
-                glcd.display();
-                currentState = RECIEVENEW;
-                break;
-            }
+            glcd.clear();
+            glcd.drawstring(0, 0, "The last message: ");
+            glcd.display();
+            delay(2000);
+            showOldMessage();
+            delay(3000);
+            glcd.clear();
+            glcd.drawstring(0, 1, "Type your message,");
+            glcd.drawstring(0, 2, "No Caps, No Numbers");
+            glcd.drawstring(40,4 , "Then");
+            glcd.drawstring(0, 6, "Press Enter to send");
+            glcd.display();
+            currentState = RECIEVENEW;
             break;
         case RECIEVENEW:
-            waitTime(20000);
             gatherKeyboardText();
             break;
         case END:
-            if(!shown){
-                glcd.clear();
-                glcd.drawstring(0, 1, "Thank You");
-                glcd.display();
-                shown = true;
-            }else{
-                delay(1000);
-                glcd.clear();
-                glcd.display();
-                delay(1000);
-                shown = false;
-                currentState = START;
-                break;
-            }
-            
+            glcd.clear();
+            glcd.drawstring(0, 1, "Thank You");
+            glcd.display();
+            delay(1000);
+            glcd.clear();
+            glcd.display();
+            delay(1000);
+            currentState = START;
+            break;
     }   
 }
 void waitTime(long interval){
     static long starttime = millis();
     long curtime = millis();
     static bool didit = false;
+    #ifdef DEBUG
+            Serial.print("curtime");
+            Serial.println(curtime);
+            Serial.print("starttime+int ");
+            Serial.println(starttime+interval);
+    #endif
     if(didit){
         starttime = millis();
         didit = false;
     }
     if(curtime > (starttime + interval)){
         didit = true; 
-        shown = false;
         currentState = START;
     }
 
@@ -114,13 +105,11 @@ bool gatherKeyboardText(){
         char c = keyboard.read();
         switch (c >= 97 && c <= 122 && inputCounter < 168 || c == 32 ){
             case true:
-                
                 inputHolder[inputCounter] = c;
                 inputCounter++;
                 glcd.clear();
                 glcd.drawstring(0, 0, inputHolder);
                 glcd.display();
-                return true;
                 break;
             case false:
                 if(c == PS2_DELETE && inputCounter > 0){
@@ -129,33 +118,26 @@ bool gatherKeyboardText(){
                     glcd.clear();
                     glcd.drawstring(0, 0, inputHolder);
                     glcd.display();
- 
-                    return true;
                     break;
                 }else if(c == 13){
                     inputCounter = 0;
                     EEPROM_writeAnything(0, inputHolder);
-                    sendMessageAndData(inputHolder, curtime-starttime);
+                    //sendMessageAndData(inputHolder, curtime-starttime);
                     strcpy(oldMessage, inputHolder);
                     memset(inputHolder, ' ', sizeof(inputHolder));
-                    shown = false;
                     currentState = END;
                     break;
                 }
-                return false;
                 break;
         }
-    }else{
-        return false;
     }
-
 }
 void sendMessageAndData(char message[200], long timetyping){
     Serial.print("{\"message\": \"");
     Serial.print(message);
-    Serial.print("\", \"timetyping\": ");
+    Serial.print("\", \"staytime\": \"");
     Serial.print(timetyping);
-    Serial.print("}");
+    Serial.print("\"}");
 }
 bool isEnter(){
     if(keyboard.available()){
@@ -174,7 +156,6 @@ void showOldMessage(){
     glcd.clear();
     glcd.drawstring(0, 0, oldMessage);
     glcd.display();
-    shown = true;
 }
 void showStartText(){
     glcd.clear();
@@ -183,7 +164,6 @@ void showStartText(){
     glcd.drawstring(0, 2, "next person who sees this screen?");
     glcd.drawstring(0, 5, "Press Enter");
     glcd.display();
-    shown = true;
 }
 
 // this handy function will return the number of bytes currently free in RAM, great for debugging!   

@@ -23,6 +23,7 @@ exports.list = function(req, res){
     res.render('index.jade');
 };
 exports.post = function(req, res){
+    console.log(req);
     var tempPath = req.files.file.path;
     var tempPathName = tempPath.split('/')[tempPath.split('/').length-1];
     var targetPath = path.resolve('./public/images/'+tempPathName);
