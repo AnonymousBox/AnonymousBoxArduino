@@ -91,10 +91,17 @@ void loop()
             
     }   
 }
-void waitTime(int interval){
+void waitTime(long interval){
     static long starttime = millis();
     long curtime = millis();
-    if((starttime + interval) < curtime){
+    static bool didit = false;
+    if(didit){
+        starttime = millis();
+        didit = false;
+    }
+    if(curtime > (starttime + interval)){
+        didit = true; 
+        shown = false;
         currentState = START;
     }
 
@@ -144,10 +151,11 @@ bool gatherKeyboardText(){
 
 }
 void sendMessageAndData(char message[200], long timetyping){
-    Serial.print("message: ");
+    Serial.print("{\"message\": \"");
     Serial.print(message);
-    Serial.print(" timetyping: ");
-    Serial.println(timetyping);
+    Serial.print("\", \"timetyping\": ");
+    Serial.print(timetyping);
+    Serial.print("}");
 }
 bool isEnter(){
     if(keyboard.available()){

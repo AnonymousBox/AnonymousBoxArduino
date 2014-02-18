@@ -1,8 +1,7 @@
-import serial, pygame, pygame.camera
+import serial, pygame, pygame.camera, time, json
 import uploadToServer
 PORT = '/dev/ttyUSB0'
 ser = serial.Serial(PORT, baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=1)
-camera = CameraPicture()
 class CameraPicture:
     def  __init__(self):
         pygame.camera.init()
@@ -12,21 +11,24 @@ class CameraPicture:
         self.img = self.cam.get_image()
     def savePicture(self):
         ctime = time.localtime()
-        name = "./images/"+str(ctime.tm_mon)+":"+str(ctime.tm_mday)+":"+str(ctime.tm_hour)+":"+str(ctime.tm_min)+":"+str(ctime.tm_sec)+"picture.jpg"
-        pygame.image.save(self.img, str(ctime.tm_mon)+":"+str(ctime.tm_mday)+":"+str(ctime.tm_hour)+":"+str(ctime.tm_min)+":"+str(ctime.tm_sec)+"picture.jpg")
+        name = "/tmp/"+str(ctime.tm_mon)+":"+str(ctime.tm_mday)+":"+str(ctime.tm_hour)+":"+str(ctime.tm_min)+":"+str(ctime.tm_sec)+"picture.jpg"
+        pygame.image.save(self.img, name)
         self.cam.stop()
         return name
 
 
 if __name__ == '__main__':
-
-    while(true):
+    camera = CameraPicture()
+    while(True):
         data = ser.readlines()
         if(len(data) >= 1):
-            params = data
+            data[0] = data[0].replace('\x02','')
+            print data
+
+            params = json.loads(data[0]);
+            print params
             camera.takePicture()
             filename = camera.savePicture()
-            uploadToServer.uploadeverything(params, filename)
 
 
 
