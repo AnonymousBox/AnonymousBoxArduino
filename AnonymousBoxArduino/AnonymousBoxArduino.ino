@@ -77,23 +77,13 @@ void loop()
             break;
     }   
 }
-void waitTime(long interval){
+void waitTime(long interval, void (*f)(void)){
     static long starttime = millis();
     long curtime = millis();
-    static bool didit = false;
-    #ifdef DEBUG
-            Serial.print("curtime");
-            Serial.println(curtime);
-            Serial.print("starttime+int ");
-            Serial.println(starttime+interval);
-    #endif
-    if(didit){
-        starttime = millis();
-        didit = false;
-    }
     if(curtime > (starttime + interval)){
-        didit = true; 
         currentState = START;
+    }else{
+       (*f)(); 
     }
 
 }
