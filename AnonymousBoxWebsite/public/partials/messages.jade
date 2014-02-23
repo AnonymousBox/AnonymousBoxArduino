@@ -5,7 +5,9 @@
                 <legend>{{message.getDate}} </legend> 
                 <div class="row">
                     <div class="col-xs-6">
-                        <img class="rimg" src="/images/{{message.pictureurl}}">     
+                        <div class="crop" ng-if="glitch">
+                            <img class="rimg" src="/images/{{message.pictureurl}}">     
+                        </div>
                     </div>
                     <div class="col-xs-6">
                         <h2>Message Sent: {{message.message}} </h2>
