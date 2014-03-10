@@ -37,12 +37,12 @@ if __name__ == '__main__':
     camera = CameraPicture()
 
     while(True):
-        DATA = ser.readlines()
-        if len(DATA) >= 1:
-            DATA[0] = data[0].replace('\x02', '')
-            print DATA
-            PARAMS = ast.literal_eval(DATA[0])
-            print PARAMS
+        data = ser.readlines()
+        if len(data) >= 1:
+            data[0] = data[0].replace('\x02', '')
+            print data
+            params = ast.literal_eval(data[0])
+            print params
             camera.take_picture()
-            FILENAME = camera.save_picture()
-            uploadToServer.uploadeverything(PARAMS, FILENAME)
+            filename = camera.save_picture()
+            uploadToServer.uploadeverything(params, filename)

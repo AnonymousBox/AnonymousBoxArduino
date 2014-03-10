@@ -3,16 +3,20 @@
         <div class="onemessage">
             <div class="well">
                 <legend>{{message.getDate}} </legend> 
-                <div class="row">
+
+                <div ng-if="!glitch">
+                    <h1>Message: {{message.message}}</h1>
+                </div>
+                <div class="row" ng-if="glitch">
                     <div class="col-xs-6">
-                        <div class="crop" ng-if="glitch">
+                        <div class="crop">
                             <img class="rimg" src="/images/{{message.pictureurl}}">     
                         </div>
                     </div>
                     <div class="col-xs-6">
-                        <h2>Message Sent: {{message.message}} </h2>
-                        <h2>Stayed for {{message.staytime}} minutes</h2>
-                       
+                            <h2>Message Sent: {{message.message}} </h2>
+                            <h2>Stayed for {{message.staytime}} seconds</h2>
+                            <h2>Spent {{message.staytime}} seconds writing the message</h2>
                     </div>
                 </div>
             </div>

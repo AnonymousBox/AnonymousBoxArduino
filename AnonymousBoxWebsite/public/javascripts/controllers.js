@@ -13,7 +13,7 @@ function MessagesCtrl($scope, $http){
             console.log("glitch is ", $scope.glitch);
         });
         if(!sglitch){
-            setTimeout(glitch, Math.floor(Math.random()*1000)+200);
+            setTimeout(glitch, Math.floor(Math.random()*300)+200);
         }else{
             setTimeout(glitch, Math.floor(Math.random()*10000)+1);
         }
