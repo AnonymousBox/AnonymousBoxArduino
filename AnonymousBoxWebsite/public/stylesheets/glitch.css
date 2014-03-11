@@ -85,9 +85,9 @@
 }
 
 .glitch {
-    -webkit-animation: glitch 0.2s ease-in;
-    -moz-animation: glitch 0.2s ease-in;
-    -o-animation: glitch 0.2s ease-in;
-    animation: glitch 0.2s ease-in;
+    -webkit-animation: glitch 0.5s ease-in;
+    -moz-animation: glitch 0.5s ease-in;
+    -o-animation: glitch 0.5s ease-in;
+    animation: glitch 0.5s ease-in;
 }
 
