@@ -9,8 +9,10 @@
                 </div>
                 <div class="row" ng-if="glitch">
                     <div class="col-xs-6">
-                        <div class="crop">
-                            <img class="rimg" src="/images/{{message.pictureurl}}">     
+                        <div ng-repeat='pictureurl in message.pictureurls'>
+                            <div class="crop">
+                                <img class="rimg" src="/images/{{pictureurl}}">     
+                            </div>
                         </div>
                     </div>
                     <div class="col-xs-6">

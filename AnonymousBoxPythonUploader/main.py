@@ -9,7 +9,7 @@ class CameraPicture:
     def  __init__(self):
         pygame.camera.init()
         self.cams = map(pygame.camera.Camera, pygame.camera.list_cameras())
-        self.imgs = [None] * 3
+        self.imgs = [None] * len(self.cams)
     def take_pictures(self):
         """captures the picture from the connected webcam"""
         for i in range(len(self.cams)): 

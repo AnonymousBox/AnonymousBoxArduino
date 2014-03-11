@@ -23,19 +23,26 @@ exports.list = function(req, res){
     res.render('index.jade');
 };
 exports.post = function(req, res){
-    console.log(req);
-    var tempPath = req.files.file.path;
-    var tempPathName = tempPath.split('/')[tempPath.split('/').length-1];
-    var targetPath = path.resolve('./public/images/'+tempPathName);
+    console.log(req.files);
+    var pictureUrls = [];
+    var tempPaths = [];
+    var fileNames = [];
+    for(key in req.files){
+        tp = req.files[key].path;
+        fn = req.files[key].name;
+        pictureUrls.push(fn);
+        var targetPath = path.resolve('./public/images/'+fn);
+        fs.rename(tp, targetPath, function(err,doc) {
+            if (err) throw err;
+            console.log("Upload completed!: ", doc);
+        });
+    }
+    console.log("picture urls: ", pictureUrls);
     messageObject = {
         message: req.body.message,
         staytime: req.body.staytime,
-        pictureurl: tempPathName
+        pictureurls: pictureUrls
     };
-    fs.rename(tempPath, targetPath, function(err) {
-        if (err) throw err;
-        console.log("Upload completed!");
-    });
     var postMessage = new MessageModel(messageObject);
     postMessage.save(function(err, doc){
         if(err || !doc){

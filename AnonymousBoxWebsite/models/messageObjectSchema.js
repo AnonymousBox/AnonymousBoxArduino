@@ -4,7 +4,7 @@ var MessageSchema = new mongoose.Schema({
         message: String,
         created: {type: Date, default: new Date()},
         staytime: Number,
-        pictureurl: String
+        pictureurls: [String]
     },
     {
         toObject: {virtuals: true},
