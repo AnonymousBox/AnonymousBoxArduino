@@ -26,26 +26,27 @@ class CameraPicture:
         return names
 
 
-#   if __name__ == '__main__':
-#       while True:
-#           #While loop searches for the arduino plugged into usb and
-#           #breaks out of while loop once found
-#           try:
-#               ser = serial.Serial(PORT, baudrate=9600, bytesize=8, parity='N',
-#               stopbits=1, timeout=1)
-#               break
-#           except serial.serialutil.SerialException as e:
-#               time.sleep(1)
-#               pass
-#       cameras = CameraPicture()
+if __name__ == '__main__':
+   while True:
+       #While loop searches for the arduino plugged into usb and
+       #breaks out of while loop once found
+       try:
+           ser = serial.Serial(PORT, baudrate=9600, bytesize=8, parity='N',
+           stopbits=1, timeout=1)
+           break
+       except serial.serialutil.SerialException as e:
+           print "no duino found"
+           time.sleep(1)
+           pass
+   cameras = CameraPicture()
 
-#       while(True):
-#           data = ser.readlines()
-#           if len(data) >= 1:
-#               data[0] = data[0].replace('\x02', '')
-#               print data
-#               params = ast.literal_eval(data[0])
-#               print params
-#               cameras.take_pictures()
-#               filenames = cameras.save_pictures()
-#               uploadToServer.uploadeverything(params, filenames[0])
+   while(True):
+       data = ser.readlines()
+       if len(data) >= 1:
+           data[0] = data[0].replace('\x02', '')
+           print data
+           params = ast.literal_eval(data[0])
+           print params
+           cameras.take_pictures()
+           filenames = cameras.save_pictures()
+           uploadToServer.uploadeverything(params, filenames)
