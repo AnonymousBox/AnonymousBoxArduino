@@ -15,7 +15,7 @@ ST7565 glcd(9, 8, 7, 6, 5);
 const int keyboardDataPin = 3;
 const int keyboardIRQPin = 2;
 
-char inputHolder[200];
+char inputHolder[168];
 enum States {START, SHOWOLDMESSAGE, RECIEVENEW, END};
 States currentState = START;
 
@@ -23,7 +23,7 @@ bool shown = false;
 
 PS2Keyboard keyboard;
 
-char oldMessage[200];
+char oldMessage[168];
 void setup()   {                
   Serial.begin(9600);
   EEPROM_readAnything(0, oldMessage);
@@ -88,12 +88,17 @@ void waitTime(long interval, void (*f)(void)){
 
 }
 bool gatherKeyboardText(){
-    static long starttime = millis();
+    static long startfunc = true;
+    long starttime = 0;
+    if(startfunc){
+        starttime = millis();
+        startfunc = false;
+    }
     long curtime = millis();
     static int inputCounter = 0;
     if(keyboard.available()){
         char c = keyboard.read();
-        switch (c >= 97 && c <= 122 && inputCounter < 168 || c == 32 ){
+        switch (c >= 97 && c <= 122 && inputCounter <= 168 || c == 32 ){
             case true:
                 inputHolder[inputCounter] = c;
                 inputCounter++;
@@ -110,11 +115,12 @@ bool gatherKeyboardText(){
                     glcd.display();
                     break;
                 }else if(c == 13){
+                    startfunc = true;
                     inputCounter = 0;
                     EEPROM_writeAnything(0, inputHolder);
-                    //sendMessageAndData(inputHolder, curtime-starttime);
+                    sendMessageAndData(inputHolder, curtime-starttime);
                     strcpy(oldMessage, inputHolder);
-                    memset(inputHolder, ' ', sizeof(inputHolder));
+                    memset(inputHolder, 0, sizeof(inputHolder));
                     currentState = END;
                     break;
                 }
@@ -122,7 +128,7 @@ bool gatherKeyboardText(){
         }
     }
 }
-void sendMessageAndData(char message[200], long timetyping){
+void sendMessageAndData(char message[168], long timetyping){
     Serial.print("{\"message\": \"");
     Serial.print(message);
     Serial.print("\", \"staytime\": \"");
