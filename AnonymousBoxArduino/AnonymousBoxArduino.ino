@@ -36,7 +36,24 @@ void setup()   {
   // initialize and set the contrast to 0x18
   glcd.begin(0x18);
   }
+void waitTime(long interval, void (*f)(void)){
+    static long starttime = millis();
+    static bool started = true;
+    if(started){
+        long curtime = millis();
+        if(curtime > (starttime + interval)){
+            started = false;
+            Serial.println("started again");
+            currentState = START;
+        }else{
+            (*f)();
+        }
+    }else{
+        starttime = millis();
+        started = true;
+    }
 
+}
 void loop()                     
 {
     switch (currentState){
@@ -63,7 +80,7 @@ void loop()
             currentState = RECIEVENEW;
             break;
         case RECIEVENEW:
-            gatherKeyboardText();
+            waitTime(3000, gatherKeyboardText);
             break;
         case END:
             glcd.clear();
@@ -77,19 +94,10 @@ void loop()
             break;
     }   
 }
-void waitTime(long interval, void (*f)(void)){
-    static long starttime = millis();
-    long curtime = millis();
-    if(curtime > (starttime + interval)){
-        currentState = START;
-    }else{
-       (*f)(); 
-    }
 
-}
-bool gatherKeyboardText(){
-    static long startfunc = true;
-    long starttime = 0;
+void gatherKeyboardText(){
+    static bool startfunc = false;
+    static long starttime = millis();
     if(startfunc){
         starttime = millis();
         startfunc = false;
