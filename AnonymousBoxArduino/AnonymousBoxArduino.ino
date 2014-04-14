@@ -14,6 +14,7 @@
 ST7565 glcd(9, 8, 7, 6, 5);
 const int keyboardDataPin = 3;
 const int keyboardIRQPin = 2;
+const int sonarPin = 1;
 
 char inputHolder[168];
 enum States {START, SHOWOLDMESSAGE, RECIEVENEW, END};
@@ -29,6 +30,7 @@ void setup()   {
   EEPROM_readAnything(0, oldMessage);
   // turn on backlight
   pinMode(BACKLIGHT_LED, OUTPUT);
+  pinMode(sonarPin,INPUT);
   digitalWrite(BACKLIGHT_LED, HIGH);
 
   //initialize keyboard
@@ -80,6 +82,7 @@ void loop()
             currentState = RECIEVENEW;
             break;
         case RECIEVENEW:
+            reactSonar();
             waitTime(3000, gatherKeyboardText);
             break;
         case END:
@@ -168,6 +171,66 @@ void showStartText(){
     glcd.drawstring(0, 2, "next person who sees this screen?");
     glcd.drawstring(0, 5, "Press Enter");
     glcd.display();
+}
+void reactSonar(){
+    int sonVal = checkSonar();
+    if(currentState == RECIEVENEW){
+        if(sonVal > 100){
+            Serial.println("left");
+            delay(1000);
+            currentState = START;
+
+        }
+    }
+    
+}
+int checkSonar(){
+    static long pulse = 0;
+    static int arraysize = 10;
+    static int modE;
+    static int rangevalue[] = {0,0,0,0,0,0,0,0,0,0};
+    for(int i = 0; i < arraysize; i++)
+    {
+        pulse = pulseIn(sonarPin, HIGH);
+        rangevalue[i] = pulse/147;
+        delay(10);
+    }
+    modE = mode(rangevalue,arraysize);
+    delay(10);
+    return modE;
+    
+}
+int mode(int *x,int n){
+
+    int i = 0;
+    int count = 0;
+    int maxCount = 0;
+    int mode = 0;
+    int bimodal;
+    int prevCount = 0;
+    while(i<(n-1)){
+        prevCount=count;
+        count=0;
+        while(x[i]==x[i+1]){
+            count++;
+            i++;
+        }
+        if(count>prevCount&count>maxCount){
+            mode=x[i];
+            maxCount=count;
+            bimodal=0;
+        }
+        if(count==0){
+            i++;
+        }
+        if(count==maxCount){//If the dataset has 2 or more modes.
+            bimodal=1;
+        }
+        if(mode==0||bimodal==1){//Return the median if there is no mode.
+            mode=x[(n/2)];
+        }
+        return mode;
+    }
 }
 
 // this handy function will return the number of bytes currently free in RAM, great for debugging!   
