@@ -14,7 +14,7 @@
 ST7565 glcd(9, 8, 7, 6, 5);
 const int keyboardDataPin = 3;
 const int keyboardIRQPin = 2;
-const int sonarPin = 1;
+const int sonarPin = 4;
 
 char inputHolder[168];
 enum States {START, SHOWOLDMESSAGE, RECIEVENEW, END};
@@ -38,17 +38,19 @@ void setup()   {
   // initialize and set the contrast to 0x18
   glcd.begin(0x18);
   }
-void waitTime(long interval, void (*f)(void)){
-    static long starttime = millis();
-    static bool started = true;
+void waitTime(long inter, void (*f)(bool)){
+    static long starttime = 0;
+    static bool started = false;
     if(started){
+        
         long curtime = millis();
-        if(curtime > (starttime + interval)){
+        if(curtime > (starttime + inter)){
             started = false;
             Serial.println("started again");
+            (*f)(true);
             currentState = START;
         }else{
-            (*f)();
+            (*f)(false);
         }
     }else{
         starttime = millis();
@@ -83,7 +85,7 @@ void loop()
             break;
         case RECIEVENEW:
             reactSonar();
-            waitTime(3000, gatherKeyboardText);
+            gatherKeyboardText(false);
             break;
         case END:
             glcd.clear();
@@ -98,15 +100,24 @@ void loop()
     }   
 }
 
-void gatherKeyboardText(){
+void gatherKeyboardText(bool reset){
     static bool startfunc = false;
     static long starttime = millis();
+    static int inputCounter = 0;
+    static int distance = 0; 
     if(startfunc){
         starttime = millis();
         startfunc = false;
     }
+    if(reset == true){
+        Serial.print("reseting");
+        inputCounter = 0;
+        memset(inputHolder, 0, sizeof(inputHolder));
+        startfunc = true;
+
+         
+    }
     long curtime = millis();
-    static int inputCounter = 0;
     if(keyboard.available()){
         char c = keyboard.read();
         switch (c >= 97 && c <= 122 && inputCounter <= 168 || c == 32 ){
@@ -126,12 +137,12 @@ void gatherKeyboardText(){
                     glcd.display();
                     break;
                 }else if(c == 13){
-                    startfunc = true;
                     inputCounter = 0;
                     EEPROM_writeAnything(0, inputHolder);
-                    sendMessageAndData(inputHolder, curtime-starttime);
+                    sendMessageAndData(inputHolder, curtime-starttime, checkSonar());
                     strcpy(oldMessage, inputHolder);
                     memset(inputHolder, 0, sizeof(inputHolder));
+                    startfunc = true;
                     currentState = END;
                     break;
                 }
@@ -139,11 +150,13 @@ void gatherKeyboardText(){
         }
     }
 }
-void sendMessageAndData(char message[168], long timetyping){
+void sendMessageAndData(char message[168], long timetyping, int distance){
     Serial.print("{\"message\": \"");
     Serial.print(message);
     Serial.print("\", \"staytime\": \"");
     Serial.print(timetyping);
+    Serial.print("\", \"distance\": \"");
+    Serial.print(distance);
     Serial.print("\"}");
 }
 bool isEnter(){
@@ -174,10 +187,12 @@ void showStartText(){
 }
 void reactSonar(){
     int sonVal = checkSonar();
+    Serial.println(sonVal);
     if(currentState == RECIEVENEW){
-        if(sonVal > 100){
+        if(sonVal > 50){
             Serial.println("left");
             delay(1000);
+            gatherKeyboardText(true);
             currentState = START;
 
         }
@@ -186,17 +201,15 @@ void reactSonar(){
 }
 int checkSonar(){
     static long pulse = 0;
-    static int arraysize = 10;
+    static int arraysize = 9;
     static int modE;
-    static int rangevalue[] = {0,0,0,0,0,0,0,0,0,0};
+    static int rangevalue[] = {0,0,0,0,0,0,0,0,0};
     for(int i = 0; i < arraysize; i++)
     {
         pulse = pulseIn(sonarPin, HIGH);
         rangevalue[i] = pulse/147;
-        delay(10);
     }
     modE = mode(rangevalue,arraysize);
-    delay(10);
     return modE;
     
 }
