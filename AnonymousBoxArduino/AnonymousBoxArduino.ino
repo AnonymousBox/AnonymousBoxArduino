@@ -41,14 +41,14 @@ void setup()   {
 void waitTime(long inter, void (*f)(bool)){
     static long starttime = 0;
     static bool started = false;
+    long curtime = millis();
     if(started){
-        
-        long curtime = millis();
         if(curtime > (starttime + inter)){
             started = false;
-            Serial.println("started again");
-            (*f)(true);
-            currentState = START;
+            if(reactSonar()){
+                (*f)(true);
+                currentState = START;
+            }
         }else{
             (*f)(false);
         }
@@ -84,8 +84,8 @@ void loop()
             currentState = RECIEVENEW;
             break;
         case RECIEVENEW:
-            reactSonar();
-            gatherKeyboardText(false);
+            waitTime(3000, gatherKeyboardText);
+            //gatherKeyboardText(false);
             break;
         case END:
             glcd.clear();
@@ -104,18 +104,16 @@ void gatherKeyboardText(bool reset){
     static bool startfunc = false;
     static long starttime = millis();
     static int inputCounter = 0;
-    static int distance = 0; 
     if(startfunc){
         starttime = millis();
         startfunc = false;
     }
     if(reset == true){
-        Serial.print("reseting");
+//        Serial.print("reseting");
         inputCounter = 0;
         memset(inputHolder, 0, sizeof(inputHolder));
         startfunc = true;
-
-         
+        return;
     }
     long curtime = millis();
     if(keyboard.available()){
@@ -150,13 +148,13 @@ void gatherKeyboardText(bool reset){
         }
     }
 }
-void sendMessageAndData(char message[168], long timetyping, int distance){
+void sendMessageAndData(char message[168], long timetyping, int gotdist){
     Serial.print("{\"message\": \"");
     Serial.print(message);
     Serial.print("\", \"staytime\": \"");
     Serial.print(timetyping);
     Serial.print("\", \"distance\": \"");
-    Serial.print(distance);
+    Serial.print(gotdist);
     Serial.print("\"}");
 }
 bool isEnter(){
@@ -185,18 +183,17 @@ void showStartText(){
     glcd.drawstring(0, 5, "Press Enter");
     glcd.display();
 }
-void reactSonar(){
+bool reactSonar(){
     int sonVal = checkSonar();
-    Serial.println(sonVal);
+    //Serial.println(sonVal);
     if(currentState == RECIEVENEW){
         if(sonVal > 50){
-            Serial.println("left");
-            delay(1000);
-            gatherKeyboardText(true);
-            currentState = START;
-
+            //Serial.println("left");
+            return true;
         }
+        return false;
     }
+    return false;
     
 }
 int checkSonar(){
