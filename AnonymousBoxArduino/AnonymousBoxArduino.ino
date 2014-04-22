@@ -6,38 +6,31 @@
 #define BACKLIGHT_LED 10
 
 #define DEBUG 1
-// pin 9 - Serial data out (SID)
-// pin 8 - Serial clock out (SCLK)
-// pin 7 - Data/Command select (RS or A0)
-// pin 6 - LCD reset (RST)
-// pin 5 - LCD chip select (CS)
+
 ST7565 glcd(9, 8, 7, 6, 5);
 const int keyboardDataPin = 3;
 const int keyboardIRQPin = 2;
 const int sonarPin = 4;
 
 char inputHolder[168];
+char oldMessage[168];
+//States of the code 
 enum States {START, SHOWOLDMESSAGE, RECIEVENEW, END};
 States currentState = START;
-
-bool shown = false;
-
 PS2Keyboard keyboard;
 
-char oldMessage[168];
+
 void setup()   {                
   Serial.begin(9600);
+  //reads last message written to EEPROM
   EEPROM_readAnything(0, oldMessage);
-  // turn on backlight
   pinMode(BACKLIGHT_LED, OUTPUT);
   pinMode(sonarPin,INPUT);
   digitalWrite(BACKLIGHT_LED, HIGH);
-
-  //initialize keyboard
   keyboard.begin(keyboardDataPin, keyboardIRQPin);
-  // initialize and set the contrast to 0x18
   glcd.begin(0x18);
-  }
+}
+
 void waitTime(long inter, void (*f)(bool)){
     static long starttime = 0;
     static bool started = false;
@@ -58,6 +51,7 @@ void waitTime(long inter, void (*f)(bool)){
     }
 
 }
+
 void loop()                     
 {
     switch (currentState){
@@ -134,7 +128,7 @@ void gatherKeyboardText(bool reset){
                     glcd.drawstring(0, 0, inputHolder);
                     glcd.display();
                     break;
-                }else if(c == 13){
+                }else if(c == 13 && !isEmpty(inputHolder)){
                     inputCounter = 0;
                     EEPROM_writeAnything(0, inputHolder);
                     sendMessageAndData(inputHolder, curtime-starttime, checkSonar());
@@ -157,18 +151,7 @@ void sendMessageAndData(char message[168], long timetyping, int gotdist){
     Serial.print(gotdist);
     Serial.print("\"}");
 }
-bool isEnter(){
-    if(keyboard.available()){
-        char c = keyboard.read();
-        if(c == 13){
-            return true;
-        }else{
-            return false;
-        }
-    }else{
-        return false;
-    }
-}
+
 
 void showOldMessage(){
     glcd.clear();
@@ -240,6 +223,27 @@ int mode(int *x,int n){
             mode=x[(n/2)];
         }
         return mode;
+    }
+}
+bool isEmpty(char vals[168]){
+    for(int i = 0; i<sizeof(vals); i++){
+        char checked = vals[i];
+        if(checked != 0 && checked != 32){
+            return false;
+        }
+    }
+    return true;
+}
+bool isEnter(){
+    if(keyboard.available()){
+        char c = keyboard.read();
+        if(c == 13){
+            return true;
+        }else{
+            return false;
+        }
+    }else{
+        return false;
     }
 }
 
