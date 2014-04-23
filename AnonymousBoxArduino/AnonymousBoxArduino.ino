@@ -14,8 +14,9 @@ const int sonarPin = 4;
 
 char inputHolder[168];
 char oldMessage[168];
+long staytime;
 //States of the code 
-enum States {START, SHOWOLDMESSAGE, RECIEVENEW, END};
+enum States {START, SHOWOLDMESSAGE, RECIEVENEW, END, LIMBO};
 States currentState = START;
 PS2Keyboard keyboard;
 
@@ -28,7 +29,7 @@ void setup()   {
   pinMode(sonarPin,INPUT);
   digitalWrite(BACKLIGHT_LED, HIGH);
   keyboard.begin(keyboardDataPin, keyboardIRQPin);
-  glcd.begin(0x18);
+  glcd.begin(0x1f);
 }
 
 void waitTime(long inter, void (*f)(bool)){
@@ -63,6 +64,8 @@ void loop()
             }
             break;
         case SHOWOLDMESSAGE:
+            //showAgreement();
+            //delay(1000);
             glcd.clear();
             glcd.drawstring(0, 0, "The last message: ");
             glcd.display();
@@ -75,6 +78,7 @@ void loop()
             glcd.drawstring(40,4 , "Then");
             glcd.drawstring(0, 6, "Press Enter to send");
             glcd.display();
+            delay(500);
             currentState = RECIEVENEW;
             break;
         case RECIEVENEW:
@@ -85,12 +89,14 @@ void loop()
             glcd.clear();
             glcd.drawstring(0, 1, "Thank You");
             glcd.display();
-            delay(1000);
-            glcd.clear();
-            glcd.display();
-            delay(1000);
-            currentState = START;
+            currentState = LIMBO;
             break;
+        case LIMBO:
+          if(reactSonar()){
+                currentState = START;
+            }
+            break;
+
     }   
 }
 
@@ -129,9 +135,10 @@ void gatherKeyboardText(bool reset){
                     glcd.display();
                     break;
                 }else if(c == 13 && !isEmpty(inputHolder)){
+
+                    sendMessageAndData(inputHolder, curtime-starttime, checkSonar());
                     inputCounter = 0;
                     EEPROM_writeAnything(0, inputHolder);
-                    sendMessageAndData(inputHolder, curtime-starttime, checkSonar());
                     strcpy(oldMessage, inputHolder);
                     memset(inputHolder, 0, sizeof(inputHolder));
                     startfunc = true;
@@ -166,18 +173,20 @@ void showStartText(){
     glcd.drawstring(0, 5, "Press Enter");
     glcd.display();
 }
+/*void showAgreement(){
+    glcd.clear();
+    glcd.drawstring(0,5, "By using this screen");
+    glcd.drawstring(0,7, "http://bit.ly/1f1yT2n");
+    glcd.display();
+}*/
 bool reactSonar(){
     int sonVal = checkSonar();
     //Serial.println(sonVal);
-    if(currentState == RECIEVENEW){
-        if(sonVal > 50){
-            //Serial.println("left");
-            return true;
-        }
-        return false;
+    if(sonVal > 50){
+        //Serial.println("left");
+        return true;
     }
     return false;
-    
 }
 int checkSonar(){
     static long pulse = 0;
@@ -191,7 +200,6 @@ int checkSonar(){
     }
     modE = mode(rangevalue,arraysize);
     return modE;
-    
 }
 int mode(int *x,int n){
 
