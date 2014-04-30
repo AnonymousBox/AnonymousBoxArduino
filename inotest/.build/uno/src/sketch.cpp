@@ -1,49 +1,71 @@
+#include <Arduino.h>
 #include <EEPROM.h>
-#include "thankyouBMP.h"
 #include "EEPROMAnything.h"
-#include "QrCode.h"
 #include "ST7565.h"
 #include <PS2Keyboard.h>
+void setup();
+void loop();
+void gatherKeyboardText(bool reset);
+void sendMessageAndData(char message[168], long timetyping, int distance);
+bool isEnter();
+void showOldMessage();
+void showStartText();
+void reactSonar();
+int checkSonar();
+int mode(int *x,int n);
+int freeRam(void);
+#line 1 "src/sketch.ino"
+//#include <EEPROM.h>
+//#include "EEPROMAnything.h"
+//#include "ST7565.h"
+//#include <PS2Keyboard.h>
 
 #define BACKLIGHT_LED 10
 
 #define DEBUG 1
+// pin 9 - Serial data out (SID)
+// pin 8 - Serial clock out (SCLK)
+// pin 7 - Data/Command select (RS or A0)
+// pin 6 - LCD reset (RST)
+// pin 5 - LCD chip select (CS)
 ST7565 glcd(9, 8, 7, 6, 5);
 const int keyboardDataPin = 3;
 const int keyboardIRQPin = 2;
 const int sonarPin = 4;
 
 char inputHolder[168];
-char oldMessage[168];
-long staytime;
-//States of the code 
-enum States {START, SHOWOLDMESSAGE, RECIEVENEW, END, LIMBO};
+enum States {START, SHOWOLDMESSAGE, RECIEVENEW, END};
 States currentState = START;
-PS2Keyboard keyboard;
-void(* resetFunc) (void) = 0; 
 
+bool shown = false;
+
+PS2Keyboard keyboard;
+
+char oldMessage[168];
 void setup()   {                
   Serial.begin(9600);
-  //reads last message written to EEPROM
   EEPROM_readAnything(0, oldMessage);
+  // turn on backlight
   pinMode(BACKLIGHT_LED, OUTPUT);
   pinMode(sonarPin,INPUT);
   digitalWrite(BACKLIGHT_LED, HIGH);
-  keyboard.begin(keyboardDataPin, keyboardIRQPin);
-  glcd.begin(0x1f);
-}
 
+  //initialize keyboard
+  keyboard.begin(keyboardDataPin, keyboardIRQPin);
+  // initialize and set the contrast to 0x18
+  glcd.begin(0x18);
+  }
 void waitTime(long inter, void (*f)(bool)){
     static long starttime = 0;
     static bool started = false;
-    long curtime = millis();
     if(started){
+        
+        long curtime = millis();
         if(curtime > (starttime + inter)){
             started = false;
-            if(reactSonar()){
-                (*f)(true);
-                currentState = START;
-            }
+            Serial.println("started again");
+            reactSonar();
+            (*f)(false);
         }else{
             (*f)(false);
         }
@@ -53,27 +75,17 @@ void waitTime(long inter, void (*f)(bool)){
     }
 
 }
-
 void loop()                     
 {
     switch (currentState){
         case START:
            if(isEnter() ==1){
                 currentState = SHOWOLDMESSAGE;
-
-            } else {
+            }else{
                 showStartText();
             }
             break;
         case SHOWOLDMESSAGE:
-            glcd.clear();
-            glcd.drawstring(20, 3, "By Using this Box");
-            glcd.drawstring(20, 4, "You agree to the terms");
-            glcd.drawstring(20, 5, "on this site");
-            glcd.drawstring(20, 6, "bit.ly/1f1yT2n");
-            glcd.display();
-            delay(500);
-
             glcd.clear();
             glcd.drawstring(0, 0, "The last message: ");
             glcd.display();
@@ -86,33 +98,21 @@ void loop()
             glcd.drawstring(40,4 , "Then");
             glcd.drawstring(0, 6, "Press Enter to send");
             glcd.display();
-            delay(2000);
             currentState = RECIEVENEW;
             break;
         case RECIEVENEW:
-            gatherKeyboardText(false);
-            if(reactSonar()){
-                gatherKeyboardText(true);
-                currentState = START;
-            }
-            //gatherKeyboardText(false);
+            waitTime(3000, gatherKeyboardText);
             break;
         case END:
-            //showEndText();
-            //delay(4000);
-            showEndGraphic();
+            glcd.clear();
+            glcd.drawstring(0, 1, "Thank You");
+            glcd.display();
             delay(1000);
-            showQrGraphic();
-            currentState = LIMBO;
+            glcd.clear();
+            glcd.display();
+            delay(1000);
+            currentState = START;
             break;
-        case LIMBO:
-          if(reactSonar()){
-                resetFunc();
-            }else if(isEnter()){
-                delay(5000);
-            }
-            break;
-
     }   
 }
 
@@ -120,40 +120,42 @@ void gatherKeyboardText(bool reset){
     static bool startfunc = false;
     static long starttime = millis();
     static int inputCounter = 0;
+    static int distance = 0; 
     if(startfunc){
         starttime = millis();
         startfunc = false;
     }
     if(reset == true){
-//        Serial.print("reseting");
+        Serial.print("reseting");
         inputCounter = 0;
         memset(inputHolder, 0, sizeof(inputHolder));
         startfunc = true;
-        return;
+
+         
     }
     long curtime = millis();
     if(keyboard.available()){
         char c = keyboard.read();
-        delay(10);
         switch (c >= 97 && c <= 122 && inputCounter <= 168 || c == 32 ){
             case true:
                 inputHolder[inputCounter] = c;
-                ++inputCounter;
+                inputCounter++;
                 glcd.clear();
                 glcd.drawstring(0, 0, inputHolder);
                 glcd.display();
                 break;
             case false:
                 if(c == PS2_DELETE && inputCounter > 0){
-                    inputHolder[--inputCounter] = 32;
+                    inputCounter--;
+                    inputHolder[inputCounter] = 32;
                     glcd.clear();
                     glcd.drawstring(0, 0, inputHolder);
                     glcd.display();
                     break;
-                }else if(c == 13 && !isEmpty(inputHolder)){
-                    sendMessageAndData(inputHolder, curtime-starttime, checkSonar());
+                }else if(c == 13){
                     inputCounter = 0;
                     EEPROM_writeAnything(0, inputHolder);
+                    sendMessageAndData(inputHolder, curtime-starttime, checkSonar());
                     strcpy(oldMessage, inputHolder);
                     memset(inputHolder, 0, sizeof(inputHolder));
                     startfunc = true;
@@ -164,15 +166,28 @@ void gatherKeyboardText(bool reset){
         }
     }
 }
-void sendMessageAndData(char message[168], long timetyping, int gotdist){
-    Serial.print(F("{\"message\": \""));
+void sendMessageAndData(char message[168], long timetyping, int distance){
+    Serial.print("{\"message\": \"");
     Serial.print(message);
-    Serial.print(F("\", \"staytime\": \""));
+    Serial.print("\", \"staytime\": \"");
     Serial.print(timetyping);
-    Serial.print(F("\", \"distance\": \""));
-    Serial.print(gotdist);
-    Serial.print(F("\"}"));
+    Serial.print("\", \"distance\": \"");
+    Serial.print(distance);
+    Serial.print("\"}");
 }
+bool isEnter(){
+    if(keyboard.available()){
+        char c = keyboard.read();
+        if(c == 13){
+            return true;
+        }else{
+            return false;
+        }
+    }else{
+        return false;
+    }
+}
+
 void showOldMessage(){
     glcd.clear();
     glcd.drawstring(0, 0, oldMessage);
@@ -186,40 +201,19 @@ void showStartText(){
     glcd.drawstring(0, 5, "Press Enter");
     glcd.display();
 }
-/*void showEndText(){
-    glcd.clear();
-    glcd.drawstring(0,0, "To see all the messages");
-    glcd.drawstring(0,1, "go to to this site:");
-    glcd.drawstring(0,2, "bit.ly/1tHLFqN");
-    glcd.display();
-}*/
-void showEndGraphic(){
-    glcd.clear();
-    glcd.drawbitmap(0,0,thankyou, 128,64, BLACK);
-    glcd.display();
-}
-void showQrGraphic(){
-    glcd.clear();
-    glcd.drawbitmap(0,0,qrcode, 128,64, BLACK);
-    glcd.display();
-}
-bool reactSonar(){
-    static bool startfunc = false;
-    static long starttime = millis();
-    long curtime = millis();
-    if(startfunc){
-        starttime = millis();
-        startfunc = false;
-    }
-    //Serial.println(sonVal);
-    if((curtime - starttime)  > 3000){
-        startfunc = true;
-        if(checkSonar() > 50){
-            //Serial.println("left");
-            return true;
+void reactSonar(){
+    int sonVal = checkSonar();
+    Serial.println(sonVal);
+    if(currentState == RECIEVENEW){
+        if(sonVal > 50){
+            Serial.println("left");
+            delay(1000);
+            gatherKeyboardText(true);
+            currentState = START;
+
         }
     }
-    return false;
+    
 }
 int checkSonar(){
     static long pulse = 0;
@@ -230,10 +224,10 @@ int checkSonar(){
     {
         pulse = pulseIn(sonarPin, HIGH);
         rangevalue[i] = pulse/147;
-        delay(10);
     }
     modE = mode(rangevalue,arraysize);
     return modE;
+    
 }
 int mode(int *x,int n){
 
@@ -265,27 +259,6 @@ int mode(int *x,int n){
             mode=x[(n/2)];
         }
         return mode;
-    }
-}
-bool isEmpty(char vals[168]){
-    for(int i = 0; i<sizeof(vals); i++){
-        char checked = vals[i];
-        if(checked != 0 && checked != 32){
-            return false;
-        }
-    }
-    return true;
-}
-bool isEnter(){
-    if(keyboard.available()){
-        char c = keyboard.read();
-        if(c == 13){
-            return true;
-        }else{
-            return false;
-        }
-    }else{
-        return false;
     }
 }
 
